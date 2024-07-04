@@ -1,16 +1,18 @@
 from typing import TypedDict, Any
 
+import numpy as np
 from gymnasium import Env, spaces
 
 from regent_ai.GamePlayer import GamePlayer
 from regent_ai.ScreenReader import ScreenReader
 from regent_ai.GameCardReader import GameCardReader
 from regent_ai.GameValuesReader import GameValuesReader, GameValues
+from regent_ai.Transformer import embeddings
 
 
 class GameState(TypedDict):
     dead: int  # current value
-    message: str  # last value
+    message: np.ndarray  # last value
     action: int  # last value
     values: GameValues  # current value
 
@@ -30,7 +32,7 @@ class GameEnvironment(Env):
         self.action_space = spaces.Discrete(2)  # 0 - slide right, agree; 1 - slide left, disagree
         self.observation_space = spaces.Dict({
             'dead': spaces.Discrete(2),  # 0 - alive, 1 - dead
-            'message': spaces.Text(max_length=30, charset='utf-8'),
+            'message': spaces.Box(low=-1, high=1, shape=[384], dtype=np.float32),
             'action': spaces.Discrete(2),
             'values': spaces.Dict({
                 'church': spaces.Discrete(100),
@@ -40,6 +42,7 @@ class GameEnvironment(Env):
             })
         })
 
+        self.last_message = ''
         self.screen_reader = ScreenReader()
         self.card_reader = GameCardReader(self.screen_reader)
         self.game_values_reader = GameValuesReader()
@@ -49,7 +52,7 @@ class GameEnvironment(Env):
         self.game_player.reset()
         self.state = {
             'dead': 0,
-            'message': '你就是那位年轻的国王吗？',
+            'message': embeddings('你就是那位年轻的国王吗？'),
             'action': 0,
             'values': {
                 'church': 0,
@@ -59,7 +62,6 @@ class GameEnvironment(Env):
             }
         }
 
-        # FIXME: state is not in the observation space
         return self.state, {}
 
     def render(self, mode='human'):
@@ -70,7 +72,6 @@ class GameEnvironment(Env):
         done = self.state['dead'] == 1
         reward = self._calculate_reward()
 
-        # FIXME: state is not in the observation space
         return self.state, reward, done, False, {}
 
     def _take_action_and_observe(self, action: int):
@@ -79,9 +80,16 @@ class GameEnvironment(Env):
         card_content = self.card_reader.read('screenshots/screenshot.png')
         game_values = self.game_values_reader.read('screenshots/screenshot.png')
 
+        print({
+            'dead': card_content['dead'],
+            'message': self.last_message,
+            'action': self.last_action,
+            'values': game_values
+        })
+
         # update current state
         self.state['dead'] = card_content['dead']
-        self.state['message'] = self.last_message
+        self.state['message'] = embeddings(self.last_message)
         self.state['action'] = self.last_action
         self.state['values'] = game_values
 
