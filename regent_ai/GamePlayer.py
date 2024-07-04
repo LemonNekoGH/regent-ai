@@ -4,7 +4,7 @@ import ppadb.client as client
 from ppadb.client import Client
 from ppadb.device import Device
 
-from regent_ai import ScreenReader
+from regent_ai.ScreenReader import ScreenReader
 
 
 class GamePlayer:
@@ -15,7 +15,12 @@ class GamePlayer:
 
     def __init__(self, screen_reader: ScreenReader):
         self.adb = client.Client()
-        self.device = self.adb.devices()[0]
+
+        devices = self.adb.devices()
+        if len(devices) == 0:
+            raise Exception('No devices attached')
+
+        self.device = devices[0]
         self.screenshot_path = './screenshots/screenshot.png'
         self.screen_reader = screen_reader
 

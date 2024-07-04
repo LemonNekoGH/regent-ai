@@ -29,7 +29,11 @@ class ScreenReader:
 
     def read(self, img_path: str) -> List[Tuple]:
         image = cv2.imread(img_path)
-        result = self.ocr_reader.readtext(image)
-        marked_image = self._visualize_result(image, result)
+        result, marked_image = self.detect(image)
         cv2.imwrite(f'{img_path}-marked.png', marked_image)
         return result
+
+    def detect(self, image: np.ndarray) -> (List[Tuple], np.ndarray):
+        result = self.ocr_reader.readtext(image)
+        marked_image = self._visualize_result(image, result)
+        return result, marked_image

@@ -1,5 +1,6 @@
 from typing import TypedDict, List, Tuple
-from regent_ai import ScreenReader
+
+from regent_ai.ScreenReader import ScreenReader
 
 
 class GameCardContent(TypedDict):
@@ -15,8 +16,6 @@ def extract_card_content(detections: List[Tuple], threshold=0.25) -> GameCardCon
     years = ''
     dead = 0
 
-    print(detections)
-
     for bbox, text, score in detections:
         if score < threshold:
             continue
@@ -30,7 +29,8 @@ def extract_card_content(detections: List[Tuple], threshold=0.25) -> GameCardCon
         if bbox[0][0] > 540 and bbox[0][1] > 1960:
             years = text
 
-        if '已死' in text:
+        # FIXME: '己' is wrong word, should be '已'
+        if '己死' in text:
             dead = 1
 
     return {
