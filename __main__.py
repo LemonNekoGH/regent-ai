@@ -1,13 +1,15 @@
 import regent_ai
 import gymnasium as gym
 
-env = gym.make(id='Regent-v0')
-observation, info = env.reset()
-for _ in range(100):
-    action = env.action_space.sample()
-    _, reward, terminated, truncated, _ = env.step(action)
+from stable_baselines3 import PPO
 
-    if terminated or truncated:
-        observation, _ = env.reset()
 
-env.close()
+if __name__ == '__main__':
+    env = gym.make(id='Regent-v0')
+
+    # env.reset()
+    # env.close()
+
+    model = PPO("MlpPolicy", env, verbose=1)
+    model.learn(total_timesteps=10000)
+    model.save('regent-ai-ppo-v0')

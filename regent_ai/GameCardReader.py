@@ -7,19 +7,20 @@ class GameCardContent(TypedDict):
     character_name: str
     message: str
     years: str
-    dead: int
+    dead: bool
 
 
 def extract_card_content(detections: List[Tuple], threshold=0.25) -> GameCardContent:
     message = ''
     character_name = ''
     years = ''
-    dead = 0
+    dead = False
 
     for bbox, text, score in detections:
         if score < threshold:
             continue
 
+        # FIXME: bound is not correct
         if bbox[0][1] > 600 and bbox[2][1] < 760:
             message += text
 
@@ -31,7 +32,7 @@ def extract_card_content(detections: List[Tuple], threshold=0.25) -> GameCardCon
 
         # FIXME: '己' is wrong word, should be '已'
         if '己死' in text:
-            dead = 1
+            dead = True
 
     return {
         'message': message,

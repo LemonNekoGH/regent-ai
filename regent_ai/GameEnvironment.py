@@ -11,17 +11,17 @@ from regent_ai.Transformer import embeddings
 
 
 class GameState(TypedDict):
-    dead: int  # current value
-    message: np.ndarray  # last value
-    action: int  # last value
-    values: GameValues  # current value
+    message: str
+    values: GameValues
+
+
+def _calculate_reward(dead: bool) -> int:
+    return -10 if dead else 1
 
 
 class GameEnvironment(Env):
-    last_message: str
-    last_action: int
-
-    state: GameState
+    state: np.ndarray[float, Any]
+    state_human_readable: GameState
     screen_reader: ScreenReader
     card_reader: GameCardReader
     game_values_reader: GameValuesReader
@@ -30,19 +30,13 @@ class GameEnvironment(Env):
     def __init__(self):
         super(GameEnvironment, self).__init__()
         self.action_space = spaces.Discrete(2)  # 0 - slide right, agree; 1 - slide left, disagree
-        self.observation_space = spaces.Dict({
-            'dead': spaces.Discrete(2),  # 0 - alive, 1 - dead
-            'message': spaces.Box(low=-1, high=1, shape=[384], dtype=np.float32),
-            'action': spaces.Discrete(2),
-            'values': spaces.Dict({
-                'church': spaces.Discrete(100),
-                'people': spaces.Discrete(100),
-                'army': spaces.Discrete(100),
-                'wealth': spaces.Discrete(100)
-            })
-        })
+        self.observation_space = spaces.Box(
+            low=-1,
+            high=1,
+            shape=(388,),
+            dtype=np.float32
+        )  # first 384 is message, last 4 is values
 
-        self.last_message = ''
         self.screen_reader = ScreenReader()
         self.card_reader = GameCardReader(self.screen_reader)
         self.game_values_reader = GameValuesReader()
@@ -50,29 +44,32 @@ class GameEnvironment(Env):
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         self.game_player.reset()
-        self.state = {
-            'dead': 0,
-            'message': embeddings('你就是那位年轻的国王吗？'),
-            'action': 0,
-            'values': {
-                'church': 0,
-                'people': 0,
-                'army': 0,
-                'wealth': 0
-            }
-        }
+        self.state = np.concatenate((embeddings('你就是那位年轻的国王吗？'), np.zeros(4, dtype='float32')))
 
         return self.state, {}
 
     def render(self, mode='human'):
-        print(self.state)
+        print(self.state_human_readable)
 
     def step(self, action):
-        self._take_action_and_observe(action)
-        done = self.state['dead'] == 1
-        reward = self._calculate_reward()
+        state = self._take_action_and_observe(action)
+        reward = _calculate_reward(state['dead'])
 
-        return self.state, reward, done, False, {}
+        values = [
+            state['values']['church'],
+            state['values']['people'],
+            state['values']['army'],
+            state['values']['wealth']
+        ]
+        self.state = np.concatenate((embeddings(state['message']), values))
+        self.state_human_readable = {
+            'message': state['message'],
+            'values': state['values']
+        }
+
+        print(self.state_human_readable)
+
+        return self.state, reward, state['dead'], False, {}
 
     def _take_action_and_observe(self, action: int):
         self.game_player.select_card(action)
@@ -80,26 +77,10 @@ class GameEnvironment(Env):
         card_content = self.card_reader.read('screenshots/screenshot.png')
         game_values = self.game_values_reader.read('screenshots/screenshot.png')
 
-        print({
+        print(game_values)
+
+        return {
             'dead': card_content['dead'],
-            'message': self.last_message,
-            'action': self.last_action,
+            'message': card_content['message'],
             'values': game_values
-        })
-
-        # update current state
-        self.state['dead'] = card_content['dead']
-        self.state['message'] = embeddings(self.last_message)
-        self.state['action'] = self.last_action
-        self.state['values'] = game_values
-
-        # update last state
-        self.last_action = action
-        self.last_message = card_content['message']
-
-    def _calculate_reward(self) -> int:
-        if self.state['dead'] == 1:
-            reward = -100
-        else:
-            reward = 1
-        return reward
+        }

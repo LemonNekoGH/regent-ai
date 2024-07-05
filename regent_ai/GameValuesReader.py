@@ -13,21 +13,23 @@ wealth_icon_bound = ((920, 237), (992, 376))
 
 
 class GameValues(TypedDict):
-    church: int
-    people: int
-    army: int
-    wealth: int
+    church: float
+    people: float
+    army: float
+    wealth: float
 
 
 class GameValuesReader:
     def crop_icon(self, image: np.ndarray, bound: Tuple[Tuple[int, int], Tuple[int, int]]) -> np.ndarray:
         return image[bound[0][1]:bound[1][1], bound[0][0]:bound[1][0]]
 
-    def percentage_white_height(self, image: np.ndarray) -> int:
+    def percentage_white_height(self, image: np.ndarray) -> float:
         for i in range(len(image)):  # height
             for j in range(len(image[0])):  # width
                 if image[i][j] == 255:
-                    return round(i / len(image) * 100)
+                    return np.float32(i / len(image))
+
+        return np.float32(0.0)
 
     def read(self, img_path: str) -> GameValues:
         image = cv2.imread(img_path)
