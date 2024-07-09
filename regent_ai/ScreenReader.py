@@ -3,6 +3,7 @@ from typing import List, Tuple
 import cv2
 import easyocr
 import numpy as np
+import time
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageFont import FreeTypeFont
 from easyocr import Reader

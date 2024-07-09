@@ -162,3 +162,5 @@ models/
 screenshots/
 
 .DS_Store
+
+log*.txt
