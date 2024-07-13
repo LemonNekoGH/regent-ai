@@ -35,7 +35,7 @@ class GamePlayer:
         # Click to start game
         self.tap_until_text_exists_or_not_exists(540, 1175, '亡者之灵', should_exists=True)
         # Click to stop tutorial
-        self.device.input_tap(540, 1175)
+        self.tap_screen_center()
 
     def tap_until_text_exists_or_not_exists(self, x: int, y: int, text: str, should_exists: bool):
         self.take_screenshot(self.screenshot_path)
@@ -66,11 +66,14 @@ class GamePlayer:
         x1 = 270 if right else 810
         x2 = 810 if right else 270
         self.device.input_swipe(x1, 1170, x2, 1170, 1000)
-        sleep(1)
+        sleep(2)
 
     def take_screenshot(self, save_path: str):
         self.device.shell("screencap -p /sdcard/screen.png")
         self.device.pull("/sdcard/screen.png", save_path)
+
+    def tap_screen_center(self):
+        self.device.input_tap(540, 1175)
 
     def wait_for_text(self, text: str, threshold=0.25) -> None:
         self.take_screenshot(self.screenshot_path)

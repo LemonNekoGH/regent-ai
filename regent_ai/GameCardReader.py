@@ -6,7 +6,7 @@ from regent_ai.ScreenReader import ScreenReader
 class GameCardContent(TypedDict):
     character_name: str
     message: str
-    years: str
+    years: int
     dead: bool
     narration: str
 
@@ -41,7 +41,7 @@ def extract_card_content(detections: List[Tuple], threshold=0.25) -> GameCardCon
     return {
         'message': message,
         'character_name': character_name,
-        'years': years,
+        'years': int(years.replace('?', '7')) - 603,
         'dead': dead,
         'narration': narration
     }
